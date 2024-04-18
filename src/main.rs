@@ -41,6 +41,12 @@ impl Account {
         self.update_e_balance(-delta_e);
         self.update_t_balance(-delta_t);
     }
+
+    fn swap_from_token(&mut self, pool: &mut LiquidityPool, delta_t: i32) {
+        let delta_e = pool.token_to_eth(delta_t);
+        self.update_e_balance(delta_e);
+        self.update_t_balance(-delta_t);
+    }
 }
 
 
@@ -111,28 +117,34 @@ impl LiquidityPool {
         delta_x
     }
 
-    fn token_to_eth(&mut self, delta_y: i32) {
+    fn token_to_eth(&mut self, delta_y: i32) -> i32 {
         let delta_x: i32 = LiquidityPool::get_input_price(delta_y, self.t, self.e, self.p);
         self.e = self.e - delta_x;
         self.t = self.t + delta_y;
+        delta_x
     }
 
-    fn token_to_eth_exact(&mut self, delta_x: i32) {
+    fn token_to_eth_exact(&mut self, delta_x: i32) -> i32 {
         let delta_y: i32 = LiquidityPool::get_output_price(delta_x, self.t, self.e, self.p);
         self.e = self.e - delta_x;
         self.t = self.t + delta_y;
+        delta_y
     }
 }
 
 fn main() {
     let mut pool = LiquidityPool::new(100, 100, 100, 0.003);
     let mut account = Account::new(100, 100);
-    println!("e: {}, t: {}, l: {}, k: {}", pool.e, pool.t, pool.l, pool.k);
+    let mut account_sub = Account::new(100, 100);
+    println!("e: {}, t: {}, l: {}, k: {}, price: {}", pool.e, pool.t, pool.l, pool.k, pool.t as f32 / pool.e as f32);
     pool.add_liquidity(100);
     println!("e: {}, t: {}, l: {}, k: {}", pool.e, pool.t, pool.l, pool.k);
     pool.add_liquidity(200);
     println!("e: {}, t: {}, l: {}, k: {}", pool.e, pool.t, pool.l, pool.k);
-    account.swap_from_eth(&mut pool, 10);
+    account.swap_from_eth(&mut pool, 100);
     println!("address: {}, e_balance: {}, t_balance: {}", account.address, account.e_balance, account.t_balance);
-    println!("e: {}, t: {}, l: {}, k: {}", pool.e, pool.t, pool.l, pool.k);
+    println!("e: {}, t: {}, l: {}, k: {}, price: {}", pool.e, pool.t, pool.l, pool.k, pool.t as f32 / pool.e as f32);
+    account_sub.swap_from_token(&mut pool, 100);
+    println!("address: {}, e_balance: {}, t_balance: {}", account_sub.address, account_sub.e_balance, account_sub.t_balance);
+    println!("e: {}, t: {}, l: {}, k: {}, price: {}", pool.e, pool.t, pool.l, pool.k, pool.t as f32 / pool.e as f32);
 }
